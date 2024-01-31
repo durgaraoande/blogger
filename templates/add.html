@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Add Article</title>
+  
+  <style>
+    form {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;  
+      border: 1px solid #ccc;
+    }
+    
+    input[type="text"], 
+    textarea {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    
+    input[type="submit"] {
+      width: 100%;    
+      background: #4caf50;
+      color: white;
+      padding: 14px 20px;    
+      border: none;
+      cursor: pointer; 
+    }
+  </style>
+  
+</head>
+
+<body>
+
+  <form method="post">
+  
+    {% csrf_token %}
+    
+    <input type="text" placeholder="Title" name="title">  
+    <textarea rows="5" name="arti" placeholder="Write article content"></textarea>
+    <input type="submit" value="Add Article">
+    
+  </form>
+  
+</body>
+</html>

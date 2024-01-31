@@ -1,0 +1,218 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>User Profile</title>
+  <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+  <link rel="stylesheet" href="{% static 'css/profile2.css' %}">
+
+</head>
+
+<body>
+  <header>
+    <h1>{{ user.first_name }}</h1>
+    {% if user.bio %}
+    <p>{{ user.bio.bio }}</p>
+    <button id="edit-bio" data-has-bio="true">Edit Bio</button>
+    <form id="bio-form" style="display: none">
+      {% csrf_token %}
+      <textarea name="bio">{{ user.bio.bio }}</textarea>
+      <button type="submit">Save</button>
+    </form>
+    {% else %}
+    <button id="add-bio" data-has-bio="false">Add Bio</button>
+    <form id="bio-form" style="display: none">
+      {% csrf_token %}
+      <textarea name="bio"></textarea>
+      <button type="submit">Save</button>
+    </form>
+    {% endif %}
+  </header>
+  <a href="add" class="add-btn">+ Add Blog</a>
+
+  <div class="grid">
+    {% for article in articles %}
+    <article>
+      <h2>{{ article.title }}</h2>
+      <p>By {{ article.author }}</p>
+      <p>
+        <span class="content" data-truncated-content="{{ article.content|truncatewords:30 }}"
+          data-full-content="{{ article.content }}">
+          {{ article.content|truncatewords:30 }}
+        </span>
+        {% if article.content|length > 30 %}
+        <button class="read-more">Read More</button>
+        {% endif %}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <div class="button-container">
+        <button id="increase-font">+</button>
+        <button id="decrease-font">-</button>
+      </div>
+      <span class="close-btn">&times;</span>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const readMoreBtns = document.querySelectorAll(".read-more");
+      const overlay = document.getElementById("overlay");
+      const modal = document.getElementById("modal");
+      const modalContent = document.getElementById("modal-content");
+      let fontSize = 16; // Initial font size in pixels
+
+      // Function to update the font size of modal content
+      function updateFontSize() {
+        modalContent.style.fontSize = fontSize + "px";
+      }
+
+      readMoreBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const content = this.parentNode.querySelector(".content");
+          modalContent.innerHTML =
+            content.dataset.fullContent || content.innerText;
+          modalContent.classList.add("modal-content-text");
+          modal.style.display = "block";
+          overlay.style.display = "block";
+          updateFontSize(); // Set initial font size
+        });
+      });
+
+      document
+        .querySelector(".close-btn")
+        .addEventListener("click", function () {
+          modal.style.display = "none";
+          overlay.style.display = "none";
+        });
+
+      overlay.addEventListener("click", function () {
+        modal.style.display = "none";
+        overlay.style.display = "none";
+      });
+      // Hide "Read More" button if word length < 30
+      const contents = document.querySelectorAll(".content");
+      contents.forEach(function (content) {
+        const readMoreBtn = content.parentNode.querySelector(".read-more");
+        if (content.innerText.split(" ").length <= 30) {
+          readMoreBtn.style.display = "none";
+        }
+      });
+
+      // Increase font size
+      document
+        .getElementById("increase-font")
+        .addEventListener("click", function () {
+          fontSize += 2; // You can adjust the step size as needed
+          updateFontSize();
+        });
+
+      // Decrease font size
+      document
+        .getElementById("decrease-font")
+        .addEventListener("click", function () {
+          fontSize -= 2; // You can adjust the step size as needed
+          updateFontSize();
+        });
+
+      init();
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", init);
+
+    function toggleButtonsAndForm() {
+        const addBioBtn = document.getElementById("add-bio");
+        const editBioBtn = document.getElementById("edit-bio");
+        const bioForm = document.getElementById("bio-form");
+
+        if (!addBioBtn || !editBioBtn || !bioForm) {
+            console.error("One or more elements not found.");
+            return;
+        }
+
+        const hasBio = addBioBtn.getAttribute("data-has-bio") === "true";
+
+        if (hasBio) {
+            editBioBtn.style.display = "inline-block";
+            addBioBtn.style.display = "none";
+            bioForm.style.display = "none"; // Initially hide bio form
+        } else {
+            addBioBtn.style.display = "inline-block";
+            editBioBtn.style.display = "none";
+            bioForm.style.display = "block"; // Initially show bio form
+        }
+    }
+
+    function init() {
+        const addBioBtn = document.getElementById("add-bio");
+        const editBioBtn = document.getElementById("edit-bio");
+        const bioForm = document.getElementById("bio-form");
+
+        if (addBioBtn) {
+            addBioBtn.addEventListener("click", function() {
+                toggleButtonsAndForm();
+                bioForm.style.display = "block";
+            });
+        }
+
+        if (editBioBtn) {
+            editBioBtn.addEventListener("click", function() {
+                toggleButtonsAndForm();
+                bioForm.style.display = "block";
+            });
+        }
+
+        // Additional event listeners...
+        if (bioForm) {
+            // Initially hide bioForm
+            bioForm.style.display = "none";
+
+            // Register event listener for bioForm
+            bioForm.addEventListener("submit", function(e) {
+                e.preventDefault();
+
+                fetch("/update-bio/", {
+                    method: "POST",
+                    body: new FormData(bioForm),
+                })
+                .then((response) => response.json())
+                .then((result) => {
+                    if (result.status === "success") {
+                        // Bio updated successfully, hide the form
+                        bioForm.style.display = "none";
+                        // Additional logic to update UI if needed
+                        // ...
+                    } else {
+                        // Display error message from result.error
+                        console.error(result.error);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error during fetch:", error);
+                });
+            });
+        }
+
+        // Initial toggle
+        toggleButtonsAndForm();
+    }
+
+    // Re-init on modal close
+    document.addEventListener("modalhidden", init);
+</script>
+
+</body>
+
+</html>
